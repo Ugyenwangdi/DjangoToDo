@@ -1,0 +1,149 @@
+https://pythonistaplanet.com/to-do-list-app-using-django/
+
+# Create a To-do List App Using Django
+
+1. Install Django
+"pip install django"
+
+2. Start a New Project
+"django-admin startproject todoproject"
+
+A new folder called todoproject with some files will be created.
+
+Go inside the todoproject folder by typing following command 
+"cd todoproject"
+
+Let's try to run the project using:
+"python manage.py runserver"
+
+3. Create an App by typing a command inside "todoproject" directory:
+"python manage.py startapp todoapp"
+
+Now, open 'settings.py' file and add the app name in INSTALLED_APPS list.
+'todoapp', Our app is ready.
+
+4. Create a Template inside todoproject
+"mkdir templates"
+
+- Inside templates directory, create new HTML file called 'todolist.html'
+Add a heading :
+"<h1>My To Do List</h1>"
+
+- Now, go to views.py file and add a view for the template
+"from django.shortcuts import render
+def todoappView(request):
+    return render(request, 'todolist.html')"
+
+- We need to link this view to the URL. Go to urls.py and make the following changes:
+"from django.contrib import admin
+from django.urls import path
+from todoapp.views import todoappView
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('todoapp/', todoappView),
+] "
+
+- Go to settings.py file and make the changes to the TEMPLATES list: Find the section called DIRS and replace with following. Django will look at this directory for templates
+"'DIRS': [os.path.join(BASE_DIR, 'templates')], "
+- Run server and go to URL/todoapp
+
+5. Create a Model. A model that represents each todo item that we'll create and store in a database
+In the models.py and add the following code:
+"from django.db import models
+class TodoListItem(models.Model):
+    content = models.TextField() "
+
+This model represents each item on the todo list. We will use this model to interact with database
+
+- Now we need to do migrations. It is to change the configuration of database.
+"python manage.py makemigrations"
+
+- After that:
+"python manage.py migrate"
+
+6. Create the To-Do List
+Let's try to retrieve todo items to the view. Open views.py file and import the model
+"from .models import TodoListItem"
+
+- We'll create a new variable to store all the todo items. Then, we'll return this list to the template file. Make the following changes in the view:
+"def todoappView(request):
+    all_todo_items = TodoListItem.objects.all()
+    return render(request, 'todolist.html',
+    {'all_items':all_todo_items}) "
+
+Here we're returning the list 'all_todo_items' as 'all_items' via a dictionary.
+
+- Now, let's go to the templates file and create a list to show all the todo items. Open todolist.html and add the following code:
+"
+<ul>
+    {% for i in all_items %} 
+    <li>{{i.content}}
+    </li>
+    {% endfor %}
+</ul> 
+
+"
+Here we're using for loop to iterate through the list of items we have in the all_items variable.
+
+- Now, just below the heading, let's create a forum so that users can add the todo items to the list.
+"<form action="/addTodoItem/" method = "post">{% csrf_token %}
+    <input type="text" name="content">
+    <input type="submit" value="Add Todo Item">
+</form> "
+
+We have two input tags in the forum. A text field for the user to type in the item, and a button to submit the item.
+The action=”/addTodoItem/” will send an HTTP request to that URL. We’ll be using the POST request here. The tag {% csrf_token %} is added for security purposes.
+
+Now refresh the URL, 
+
+- Now, let's go to views.py to create a view to handle that post request. Add the following code to create a view to handle request:
+"def addTodoView(request):
+    x = request.POST['content']
+    new_item = TodoListItem(content = x)
+    new_item.save()
+    return HttpResponseRedirect('/todoapp/') "
+
+- Since we used the method HttpResponseRedirect, we need to import that:
+"from django.htttp import HttpResponseRedirect"
+
+- Now, got to urls.py and create a new path for the view that we've just created
+"path('addTodoItem/', addTodoItem),
+
+- Don't forget to import the addTodoView to the urls.py file:
+"from todoapp.views import todoappView, addTodoView"
+
+Refrest the page
+
+7. Add Delete Buttons
+Now, let’s go to the todolist.html file and create delete buttons for each todo list item.
+
+So, add the following button in between the <li> tags just after the content.
+"<form action="/deleteTodoItem/{{i.id}}/" method = "post">{% csrf_token %}
+            <input type="submit" value="Delete">
+</form>  
+"
+
+We use the id for identifying each specific item from the list.
+
+- Now, let’s go to urls.py and add a new path for the delete requests.
+"path('deleteTodoItem/<int:i>/', deleteTodoView), "
+
+We used the integer i as a primary key to identify the specific item in the list that needs to be deleted.
+
+- Also, don’t forget to import the deleteTodoView in this file.
+"from todoapp.views import todoappView, addTodoView, deleteTodoView"
+
+- Now, let’s go to views.py and create a new view function for the delete requests.
+"
+def deleteTodoView(request, i):
+    y = TodoListItem.objects.get(id= i)
+    y.delete()
+    return HttpResponseRedirect('/todoapp/') "
+
+Now, our basic todo list app is ready.
+
+
+######################################################################
+Create superuser
+"python manage.py createsuperuser"
